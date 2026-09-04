@@ -56,12 +56,14 @@ function RobotDashboard() {
 
   // --- TRANSLATION (LEFT JOYSTICK) ---
   const handleTranslationMove = (evt, data) => {
-    const radius = 50; 
-    let newVx = Math.round((data.instance.front.x / radius) * 127);
-    let newVy = Math.round(((data.instance.front.y * -1) / radius) * 127); 
-
-    newVx = Math.max(-127, Math.min(127, newVx));
-    newVy = Math.max(-127, Math.min(127, newVy));
+    if (!data || !data.vector) return; // Safeguard against empty touches
+    
+    const maxRadius = 50; // based on joystick size
+    const dist = Math.min(data.distance, maxRadius);
+    
+    // data.vector provides normalized values between -1 and 1
+    let newVx = Math.round((dist / maxRadius) * data.vector.x * 127);
+    let newVy = Math.round((dist / maxRadius) * data.vector.y * 127); 
 
     if (Math.abs(newVx) < DEADZONE) newVx = 0;
     if (Math.abs(newVy) < DEADZONE) newVy = 0;
@@ -78,12 +80,14 @@ function RobotDashboard() {
 
   // --- ROTATION (RIGHT JOYSTICK) ---
   const handleRotationMove = (evt, data) => {
-    const radius = 50; 
-    let newW = Math.round((data.instance.front.x / radius) * 127);
+    if (!data || !data.vector) return; // Safeguard against empty touches
     
-    newW = Math.max(-127, Math.min(127, newW));
+    const maxRadius = 50; 
+    const dist = Math.min(data.distance, maxRadius);
+    
+    let newW = Math.round((dist / maxRadius) * data.vector.x * 127);
+    
     if (Math.abs(newW) < DEADZONE) newW = 0;
-    
     wRef.current = newW;
   };
 
@@ -95,69 +99,72 @@ function RobotDashboard() {
   const isConnected = connectionStatus === 'Connected';
   const estimatedRpm = ((telemetry.pwm / 255) * MAX_MOTOR_RPM).toFixed(0);
 
-  // --- STYLES TARGETING HORIZONTAL MOBILE VIEW ---
+  // --- STYLES FOR COMPACT MOBILE LANDSCAPE ---
   const styles = {
     appWrapper: {
-      position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+      width: '100vw',
+      height: '100dvh', // Modern CSS: Accounts for mobile URL bars
       backgroundColor: '#151518',
       display: 'flex', flexDirection: 'column',
-      padding: '15px 25px',
+      padding: '10px 15px', // Tighter padding
+      boxSizing: 'border-box',
       touchAction: 'none', userSelect: 'none', WebkitUserSelect: 'none',
-      fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif"
+      fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif",
+      overflow: 'hidden'
     },
     header: {
       display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-      marginBottom: '15px'
+      marginBottom: '10px', flex: '0 0 auto'
     },
     headerTitle: {
-      color: '#ffffff', margin: 0, fontSize: '18px', fontWeight: 'bold', letterSpacing: '1px'
+      color: '#ffffff', margin: 0, fontSize: '16px', fontWeight: 'bold', letterSpacing: '1px'
     },
     headerControls: {
       display: 'flex', gap: '10px', alignItems: 'center'
     },
     badge: {
-      padding: '6px 16px', borderRadius: '20px', fontSize: '12px', fontWeight: 'bold',
+      padding: '4px 12px', borderRadius: '20px', fontSize: '11px', fontWeight: 'bold',
       backgroundColor: isConnected ? 'rgba(76, 175, 80, 0.15)' : 'rgba(244, 67, 54, 0.15)',
       color: isConnected ? '#4CAF50' : '#F44336',
       border: `1px solid ${isConnected ? '#4CAF50' : '#F44336'}`
     },
     menuBtn: {
       background: 'transparent', border: '1px solid #444', borderRadius: '8px',
-      color: '#fff', padding: '4px 12px', fontSize: '16px', cursor: 'pointer'
+      color: '#fff', padding: '2px 10px', fontSize: '14px', cursor: 'pointer'
     },
     telemetryRow: {
-      display: 'flex', justifyContent: 'space-between', gap: '15px',
-      width: '100%', marginBottom: '20px'
+      display: 'flex', justifyContent: 'space-between', gap: '10px',
+      width: '100%', marginBottom: '10px', flex: '0 0 auto'
     },
     card: {
       flex: 1, backgroundColor: '#1E1E24', borderRadius: '12px',
-      padding: '15px', textAlign: 'center', border: '1px solid #2A2A35',
+      padding: '8px', textAlign: 'center', border: '1px solid #2A2A35',
       boxShadow: '0 4px 6px rgba(0,0,0,0.3)'
     },
     cardTitle: { 
-      color: '#8A8A9E', fontSize: '12px', fontWeight: 'bold', margin: '0 0 8px 0', textTransform: 'uppercase' 
+      color: '#8A8A9E', fontSize: '10px', fontWeight: 'bold', margin: '0 0 4px 0', textTransform: 'uppercase' 
     },
-    cardValue: { margin: 0, fontSize: '24px', fontWeight: '800' },
+    cardValue: { margin: 0, fontSize: '18px', fontWeight: '800' },
     joystickRow: {
-      display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end',
-      flex: 1, width: '100%'
+      display: 'flex', justifyContent: 'space-around', alignItems: 'center',
+      flex: '1 1 auto', width: '100%', minHeight: 0 // Allows shrinking without cutoff
     },
     joystickPanel: {
-      backgroundColor: '#1E1E24', borderRadius: '16px', padding: '20px',
+      backgroundColor: '#1E1E24', borderRadius: '16px', padding: '10px',
       display: 'flex', flexDirection: 'column', alignItems: 'center',
-      border: '1px solid #2A2A35', width: '240px',
+      border: '1px solid #2A2A35', width: '180px',
       boxShadow: '0 8px 16px rgba(0,0,0,0.4)'
     },
-    joystickTitle: { color: '#E0E0E0', margin: '0 0 20px 0', fontSize: '16px', fontWeight: '500' },
+    joystickTitle: { color: '#E0E0E0', margin: '0 0 10px 0', fontSize: '14px', fontWeight: '500' },
     joystickBase: {
-      position: 'relative', width: '150px', height: '150px',
+      position: 'relative', width: '110px', height: '110px',
       backgroundColor: '#111', borderRadius: '50%',
       border: '3px solid #222',
       boxShadow: 'inset 0px 4px 10px rgba(0,0,0,0.8), 0 0 15px rgba(0,0,0,0.5)'
     },
     statusText: {
-      fontFamily: 'monospace', background: '#121212', padding: '8px 16px',
-      borderRadius: '8px', marginTop: '20px', fontSize: '13px', fontWeight: 'bold'
+      fontFamily: 'monospace', background: '#121212', padding: '6px 12px',
+      borderRadius: '8px', marginTop: '10px', fontSize: '11px', fontWeight: 'bold'
     }
   };
 
@@ -188,7 +195,7 @@ function RobotDashboard() {
           <div style={styles.card}>
             <h3 style={styles.cardTitle}>Output</h3>
             <h2 style={{...styles.cardValue, color: '#FFB300'}}>{telemetry.pwm}</h2>
-            <p style={{ margin: '4px 0 0 0', fontSize: '11px', color: '#8A8A9E' }}>~ {estimatedRpm} RPM</p>
+            <p style={{ margin: '4px 0 0 0', fontSize: '10px', color: '#8A8A9E' }}>~ {estimatedRpm} RPM</p>
           </div>
           <div style={styles.card}>
             <h3 style={styles.cardTitle}>Mode</h3>
@@ -206,7 +213,7 @@ function RobotDashboard() {
               <ReactNipple
                 options={{ 
                   mode: 'static', position: { top: '50%', left: '50%' }, 
-                  color: '#00E5FF', size: 110, restOpacity: 0.9 
+                  color: '#00E5FF', size: 100, restOpacity: 0.9 
                 }}
                 style={{ width: '100%', height: '100%', position: 'absolute' }}
                 onMove={handleTranslationMove} onEnd={handleTranslationEnd}
@@ -224,14 +231,14 @@ function RobotDashboard() {
               <ReactNipple
                 options={{ 
                   mode: 'static', position: { top: '50%', left: '50%' }, 
-                  color: '#B388FF', size: 110, lockX: true, restOpacity: 0.9 
+                  color: '#B388FF', size: 100, lockX: true, restOpacity: 0.9 
                 }}
                 style={{ width: '100%', height: '100%', position: 'absolute' }}
                 onMove={handleRotationMove} onEnd={handleRotationEnd}
               />
             </div>
             <div style={{...styles.statusText, color: '#B388FF'}}>
-              Omega (w): {uiControls.w}
+              Omega: {uiControls.w}
             </div>
           </div>
 
